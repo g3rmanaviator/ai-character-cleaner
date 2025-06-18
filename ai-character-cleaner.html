@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Character Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .file-upload-section {
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f7fafc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #edf2f7;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-text strong {
+            color: #2d3748;
+            font-size: 1.2rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .upload-text p {
+            color: #718096;
+            margin: 0;
+        }
+
+        .file-list {
+            display: none;
+        }
+
+        .file-list.show {
+            display: block;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+        }
+
+        .file-details h4 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 1rem;
+        }
+
+        .file-details p {
+            margin: 0;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .file-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48bb78;
+        }
+
+        .status-indicator.processing {
+            background: #ed8936;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-indicator.error {
+            background: #e53e3e;
+        }
+
+        .remove-file {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-file:hover {
+            background: #c53030;
+        }
+
+        .or-divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+
+        .or-divider span {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0 20px;
+            color: #718096;
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .text-comparison {
+            margin: 30px 0;
+        }
+
+        .comparison-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .copy-btn, .download-btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .copy-btn:hover, .download-btn:hover {
+            background: #3182ce;
+        }
+
+        .download-btn {
+            background: #48bb78;
+        }
+
+        .download-btn:hover {
+            background: #38a169;
+        }
+
+        .text-display {
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #fafafa;
+        }
+
+        .before-text {
+            border-left: 4px solid #e53e3e;
+        }
+
+        .after-text {
+            border-left: 4px solid #48bb78;
+        }
+
+        .highlighted-char {
+            background: linear-gradient(135deg, #fed7d7, #feb2b2);
+            color: #c53030;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+            border: 1px solid #fc8181;
+            position: relative;
+            cursor: help;
+        }
+
+        .highlighted-char::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2d3748;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+        }
+
+        .highlighted-char:hover::after {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-panels {
+                grid-template-columns: 1fr;
+            }
+            
+            .panel-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .panel-actions {
+                align-self: stretch;
+                justify-content: center;
+            }
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .clear-btn {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .clear-btn:hover {
+            background: #c53030;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .summary h3 {
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .category {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .category h4 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .character-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .character-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-family: 'Courier New', monospace;
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .character-item:hover {
+            background-color: #f7fafc;
+        }
+
+        .character-item:last-child {
+            border-bottom: none;
+        }
+
+        /* New styles for filter highlighting */
+        .character-item.filter-active {
+            background-color: #fef5e7 !important;
+            border: 2px solid #f6ad55;
+            border-radius: 8px;
+            margin: 2px 0;
+        }
+
+        .filter-icon {
+            margin-left: 8px;
+            font-weight: bold;
+            color: #d69e2e;
+        }
+
+        .char-display {
+            background: #f7fafc;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .char-info {
+            flex: 1;
+            margin-left: 15px;
+        }
+
+        .char-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .char-code {
+            font-size: 0.9rem;
+            color: #718096;
+        }
+
+        .char-count {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .no-suspicious {
+            text-align: center;
+            color: #4a5568;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .warning {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .info {
+            background: #e6fffa;
+            color: #00695c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #26a69a;
+        }
+
+        /* Filter status indicator */
+        .filter-status {
+            background: #e6fffa;
+            color: #00695c;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #26a69a;
+            display: none;
+        }
+
+        .filter-status.show {
+            display: block;
+        }
+
+        /* Filter results card formatting */
+        #filterResultsCard {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #filterResultsCard p {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Text Character Detector</h1>
+        <p class="subtitle">Detect suspicious Unicode characters commonly found in AI-generated text</p>
+        
+        <div class="input-section">
+            <div class="file-upload-section">
+                <div class="file-upload-area" id="fileUploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                        <strong>Drop files here or click to browse</strong>
+                        <p>Supports .txt and .docx files</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".txt,.docx" multiple style="display: none;">
+                </div>
+                <div id="fileList" class="file-list"></div>
+            </div>
+            <div class="or-divider">
+                <span>OR</span>
+            </div>
+            <textarea id="textInput" placeholder="Paste your text here to analyze for suspicious characters..."></textarea>
+        </div>
+
+        <div class="controls">
+            <button class="analyze-btn" onclick="analyzeText()">🔍 Analyze Text</button>
+            <button class="clear-btn" onclick="clearAll()">🗑️ Clear All</button>
+        </div>
+
+        <div id="results" class="results">
+            <div id="summary" class="summary"></div>
+            
+            <!-- Filter status indicator -->
+            <div id="filterStatus" class="filter-status">
+                <span id="filterStatusText"></span>
+                <button onclick="resetFilter()" style="background: #26a69a; color: white; border: none; padding: 4px 8px; border-radius: 4px; margin-left: 10px; cursor: pointer;">Reset Filter</button>
+            </div>
+            
+            <!-- NEW: Filter Results Card for displaying sentences or warnings -->
+            <div id="filterResultsCard" class="info" style="display: none; margin-bottom: 20px; padding: 15px; border-radius: 8px;">
+                <!-- Content will be dynamically inserted here -->
+            </div>
+            
+            <div id="textComparison" class="text-comparison">
+                <div class="comparison-panels">
+                    <div class="panel before-panel">
+                        <div class="panel-header">
+                            <h3>📋 Before (Original Text)</h3>
+                            <div class="panel-actions">
+                                <button class="copy-btn" onclick="copyText('beforeText')">📋 Copy</button>
+                                <button class="download-btn" onclick="downloadText('beforeText', 'original')">💾 Download</button>
+                            </div>
+                        </div>
+                        <div id="beforeText" class="text-display before-text"></div>
+                    </div>
+                    
+                    <div class="panel after-panel">
+                        <div class="panel-header">
+                            <h3>✨ After (Cleaned Text)</h3>
+                            <div class="panel-actions">
+                                <button class="copy-btn" onclick="copyText('afterText')">📋 Copy</button>
+                                <button class="download-btn" onclick="downloadText('afterText', 'cleaned')">💾 Download</button>
+                            </div>
+                        </div>
+                        <div id="afterText" class="text-display after-text"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="categories" class="categories"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        const suspiciousCharacters = {
+            'Zero Width Characters': {
+                '\u200B': 'Zero Width Space',
+                '\u200C': 'Zero Width Non-Joiner',
+                '\u200D': 'Zero Width Joiner',
+                '\uFEFF': 'Zero Width No-Break Space (BOM)',
+                '\u2060': 'Word Joiner'
+            },
+            'Directional Control': {
+                '\u202A': 'Left-to-Right Embedding',
+                '\u202B': 'Right-to-Left Embedding',
+                '\u202C': 'Pop Directional Formatting',
+                '\u202D': 'Left-to-Right Override',
+                '\u202E': 'Right-to-Left Override',
+                '\u2066': 'Left-to-Right Isolate',
+                '\u2067': 'Right-to-Left Isolate',
+                '\u2068': 'First Strong Isolate',
+                '\u2069': 'Pop Directional Isolate',
+                '\u200E': 'Left-to-Right Mark',
+                '\u200F': 'Right-to-Left Mark'
+            },
+            'Line/Paragraph Separators': {
+                '\u2028': 'Line Separator',
+                '\u2029': 'Paragraph Separator'
+            },
+            'Unusual Spaces': {
+                '\u00A0': 'Non-Breaking Space',
+                '\u2000': 'En Quad',
+                '\u2001': 'Em Quad',
+                '\u2002': 'En Space',
+                '\u2003': 'Em Space',
+                '\u2004': 'Three-Per-Em Space',
+                '\u2005': 'Four-Per-Em Space',
+                '\u2006': 'Six-Per-Em Space',
+                '\u2007': 'Figure Space',
+                '\u2008': 'Punctuation Space',
+                '\u2009': 'Thin Space',
+                '\u200A': 'Hair Space',
+                '\u202F': 'Narrow No-Break Space',
+                '\u205F': 'Medium Mathematical Space',
+                '\u3000': 'Ideographic Space'
+            },
+            'Format Characters': {
+                '\u00AD': 'Soft Hyphen',
+                '\u034F': 'Combining Grapheme Joiner',
+                '\u061C': 'Arabic Letter Mark',
+                '\u180E': 'Mongolian Vowel Separator'
+            },
+            'Smart Punctuation': {
+                '\u2018': 'Left Single Quotation Mark',
+                '\u2019': 'Right Single Quotation Mark',
+                '\u201C': 'Left Double Quotation Mark',
+                '\u201D': 'Right Double Quotation Mark',
+                '\u2026': 'Horizontal Ellipsis',
+                '\u2014': 'Em Dash',
+                '\u2013': 'En Dash'
+            },
+            'Full-width Characters': {
+                '\uFF0C': 'Full-width Comma',
+                '\uFF0E': 'Full-width Period',
+                '\uFF1A': 'Full-width Colon',
+                '\uFF1B': 'Full-width Semicolon',
+                '\uFF08': 'Full-width Left Parenthesis',
+                '\uFF09': 'Full-width Right Parenthesis',
+                '\uFF01': 'Full-width Exclamation Mark',
+                '\uFF1F': 'Full-width Question Mark'
+            },
+            'Special Symbols': {
+                '\u00A7': 'Section Sign',
+                '\u00B6': 'Pilcrow (Paragraph Sign)',
+                '\u00B7': 'Middle Dot (Interpunct)',
+                '\u2022': 'Bullet',
+                '\u25B2': 'Black Up-pointing Triangle',
+                '\u25A0': 'Black Square',
+                '\u25C6': 'Black Diamond',
+                '\u00A4': 'Generic Currency Symbol'
+            },
+            'Object Replacement': {
+                '\uFFFC': 'Object Replacement Character',
+                '\uFFFD': 'Replacement Character'
+            }
+        };
+
+        let uploadedFiles = [];
+        let allExtractedText = '';
+        
+        // Global filter state
+        let activeFilter = {
+            type: null,
+            char: null,
+            originalTextSnapshot: '',
+            foundCharacters: {}
+        };
+
+        // Function to extract sentences containing a specific character
+        function extractSentencesWithChar(text, char) {
+            if (!text || !char) return [];
+            
+            // Basic sentence splitting by periods, question marks, and exclamation marks
+            // followed by space or end of string
+            const sentences = text.split(/(?<=[.?!])\s+(?=[A-Z0-9])|(?<=[.?!])$/g)
+                .filter(sentence => sentence.trim().length > 0);
+            
+            // Filter sentences that contain the target character
+            return sentences.filter(sentence => sentence.includes(char));
+        }
+
+        // New function to render the Before panel based on current filter
+        function renderBeforePanel(textToDisplay, foundCharactersMap, currentFilter) {
+            const beforeTextDiv = document.getElementById('beforeText');
+            
+            if (!textToDisplay) {
+                beforeTextDiv.textContent = '';
+                return;
+            }
+
+            // Get all suspicious characters and their names
+            const allSuspiciousChars = {};
+            for (const category in foundCharactersMap) {
+                if (foundCharactersMap[category]) {
+                    for (const char in foundCharactersMap[category]) {
+                        allSuspiciousChars[char] = suspiciousCharacters[category][char];
+                    }
+                }
+            }
+
+            let beforeHtml = '';
+            
+            if (!currentFilter.type || currentFilter.type === null) {
+                // No filter - render original with all highlights
+                for (let i = 0; i < textToDisplay.length; i++) {
+                    const char = textToDisplay[i];
+                    
+                    if (allSuspiciousChars[char]) {
+                        const charName = allSuspiciousChars[char];
+                        const charCode = 'U+' + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0');
+                        
+                        let displayChar = char;
+                        if (char === '\u200B') displayChar = '⎵';
+                        else if (char === '\u200C') displayChar = '⧸';
+                        else if (char === '\u200D') displayChar = '⧹';
+                        else if (char === '\uFEFF') displayChar = '◯';
+                        else if (char.charCodeAt(0) < 32) displayChar = '◦';
+                        else if (/\s/.test(char) && char !== ' ') displayChar = '⦁';
+                        
+                        beforeHtml += `<span class="highlighted-char" title="${charName} (${charCode})">${escapeHtml(displayChar)}</span>`;
+                    } else {
+                        beforeHtml += escapeHtml(char);
+                    }
+                }
+            } else if (currentFilter.type === 'show-sentences') {
+                // Show message that sentences are displayed in the card above
+                beforeHtml = '<div style="text-align: center; color: #718096; font-style: italic; padding: 40px 20px;">Filtered sentences are shown in the card above.</div>';
+            } else if (currentFilter.type === 'hide') {
+                // Hide the filtered character, show everything else
+                for (let i = 0; i < textToDisplay.length; i++) {
+                    const char = textToDisplay[i];
+                    if (char === currentFilter.char) {
+                        continue; // Skip this character
+                    }
+                    
+                    if (allSuspiciousChars[char]) {
+                        const charName = allSuspiciousChars[char];
+                        const charCode = 'U+' + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0');
+                        
+                        let displayChar = char;
+                        if (char === '\u200B') displayChar = '⎵';
+                        else if (char === '\u200C') displayChar = '⧸';
+                        else if (char === '\u200D') displayChar = '⧹';
+                        else if (char === '\uFEFF') displayChar = '◯';
+                        else if (char.charCodeAt(0) < 32) displayChar = '◦';
+                        else if (/\s/.test(char) && char !== ' ') displayChar = '⦁';
+                        
+                        beforeHtml += `<span class="highlighted-char" title="${charName} (${charCode})">${escapeHtml(displayChar)}</span>`;
+                    } else {
+                        beforeHtml += escapeHtml(char);
+                    }
+                }
+            }
+
+            beforeTextDiv.innerHTML = beforeHtml;
+        }
+
+        // Update character list highlighting based on active filter
+        function updateCharacterListHighlighting() {
+            document.querySelectorAll('.character-item').forEach(item => {
+                const char = item.getAttribute('data-char');
+                const existingIcon = item.querySelector('.filter-icon');
+                
+                if (activeFilter.char === char && activeFilter.type) {
+                    item.classList.add('filter-active');
+                    if (!existingIcon) {
+                        const icon = document.createElement('span');
+                        icon.className = 'filter-icon';
+                        icon.innerHTML = '🔍';
+                        item.appendChild(icon);
+                    }
+                } else {
+                    item.classList.remove('filter-active');
+                    if (existingIcon) {
+                        existingIcon.remove();
+                    }
+                }
+            });
+        }
+
+        // Update filter status display
+        function updateFilterStatus() {
+            const filterStatus = document.getElementById('filterStatus');
+            const filterStatusText = document.getElementById('filterStatusText');
+            
+            if (activeFilter.type && activeFilter.char) {
+                const charName = getCharacterName(activeFilter.char);
+                let statusText = '';
+                
+                if (activeFilter.type === 'show-sentences') {
+                    statusText = `🔍 Showing sentences with: ${charName}`;
+                } else if (activeFilter.type === 'hide') {
+                    statusText = `🚫 Hiding: ${charName}`;
+                }
+                
+                filterStatusText.textContent = statusText;
+                filterStatus.classList.add('show');
+            } else {
+                filterStatus.classList.remove('show');
+            }
+        }
+
+        // Get character name helper function
+        function getCharacterName(char) {
+            for (const category in suspiciousCharacters) {
+                if (suspiciousCharacters[category][char]) {
+                    return suspiciousCharacters[category][char];
+                }
+            }
+            return 'Unknown Character';
+        }
+
+        // Reset filter function
+        function resetFilter() {
+            activeFilter.type = null;
+            activeFilter.char = null;
+            
+            // Hide the filter results card
+            const filterResultsCard = document.getElementById('filterResultsCard');
+            filterResultsCard.style.display = 'none';
+            
+            // Check if we should show the warning message instead
+            const totalSuspicious = getTotalSuspiciousCount();
+            if (totalSuspicious > 5) {
+                filterResultsCard.innerHTML = `
+                    <div style="color: #c53030;">
+                        ⚠️ High number of suspicious characters detected. This text may be AI-generated or manipulated.
+                    </div>
+                `;
+                filterResultsCard.className = 'warning';
+                filterResultsCard.style.display = 'block';
+            }
+            
+            renderBeforePanel(activeFilter.originalTextSnapshot, activeFilter.foundCharacters, activeFilter);
+            updateCharacterListHighlighting();
+            updateFilterStatus();
+        }
+
+        // Helper function to get total suspicious character count
+        function getTotalSuspiciousCount() {
+            let total = 0;
+            for (const category in activeFilter.foundCharacters) {
+                if (activeFilter.foundCharacters[category]) {
+                    for (const char in activeFilter.foundCharacters[category]) {
+                        total += activeFilter.foundCharacters[category][char];
+                    }
+                }
+            }
+            return total;
+        }
+
+        // Filter action handlers
+        function handleShowSentences(char) {
+            activeFilter.type = 'show-sentences';
+            activeFilter.char = char;
+            
+            // Extract sentences containing the character
+            const sentences = extractSentencesWithChar(activeFilter.originalTextSnapshot, char);
+            const filterResultsCard = document.getElementById('filterResultsCard');
+            
+            if (sentences.length > 0) {
+                // Format sentences for display with highlighted characters
+                const formattedSentences = sentences.map(sentence => {
+                    // Highlight the target character in each sentence
+                    const highlightedSentence = sentence.replace(
+                        new RegExp(escapeRegex(char), 'g'),
+                        `<mark style="background-color: #fed7d7; color: #c53030; font-weight: bold;">${escapeHtml(char)}</mark>`
+                    );
+                    return `<p style="margin-bottom: 12px; padding: 8px; background: #f7fafc; border-radius: 6px; border-left: 3px solid #4299e1;">${highlightedSentence}</p>`;
+                }).join('');
+                
+                filterResultsCard.innerHTML = `
+                    <div style="margin-bottom: 12px;">
+                        <strong>📍 Sentences containing "${getCharacterName(char)}":</strong>
+                    </div>
+                    ${formattedSentences}
+                `;
+                filterResultsCard.className = 'info';
+            } else {
+                filterResultsCard.innerHTML = `
+                    <div style="color: #718096;">
+                        <strong>📍 No sentences found containing "${getCharacterName(char)}"</strong>
+                    </div>
+                `;
+                filterResultsCard.className = 'info';
+            }
+            
+            filterResultsCard.style.display = 'block';
+            renderBeforePanel(activeFilter.originalTextSnapshot, activeFilter.foundCharacters, activeFilter);
+            updateCharacterListHighlighting();
+            updateFilterStatus();
+        }
+
+        // Helper function to escape regex special characters
+        function escapeRegex(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function handleHideCharacter(char) {
+            activeFilter.type = 'hide';
+            activeFilter.char = char;
+            renderBeforePanel(activeFilter.originalTextSnapshot, activeFilter.foundCharacters, activeFilter);
+            updateCharacterListHighlighting();
+            updateFilterStatus();
+        }
+
+        function createTextComparison(originalText, foundCharacters) {
+            const afterTextDiv = document.getElementById('afterText');
+
+            // Handle case where foundCharacters might be empty or undefined
+            if (!foundCharacters || Object.keys(foundCharacters).length === 0) {
+                afterTextDiv.innerHTML = escapeHtml(originalText);
+                return;
+            }
+
+            // Get all suspicious characters and their names
+            const allSuspiciousChars = {};
+            for (const category in foundCharacters) {
+                if (foundCharacters[category]) {
+                    for (const char in foundCharacters[category]) {
+                        allSuspiciousChars[char] = suspiciousCharacters[category][char];
+                    }
+                }
+            }
+
+            // Process each character in the text for the "After" panel (cleaned text)
+            let afterHtml = '';
+            
+            for (let i = 0; i < originalText.length; i++) {
+                const char = originalText[i];
+                
+                if (!allSuspiciousChars[char]) {
+                    // Regular character - add to cleaned text with HTML escaping
+                    afterHtml += escapeHtml(char);
+                }
+                // Suspicious characters are omitted from afterHtml (effectively removing them)
+            }
+
+            afterTextDiv.innerHTML = afterHtml;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper function to get formatted plain text based on current filter state
+        function getFormattedPlainText(elementId) {
+            if (!activeFilter.originalTextSnapshot) {
+                const element = document.getElementById(elementId);
+                return element.textContent;
+            }
+
+            if (elementId === 'beforeText') {
+                if (activeFilter.type === 'show-sentences') {
+                    // For sentence filter, get text from filter results card
+                    const filterCard = document.getElementById('filterResultsCard');
+                    if (filterCard && filterCard.style.display !== 'none') {
+                        // Convert HTML paragraphs back to plain text with newlines
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = filterCard.innerHTML;
+                        const paragraphs = tempDiv.querySelectorAll('p');
+                        let plainText = '';
+                        paragraphs.forEach((p, index) => {
+                            if (index > 0) plainText += '\n';
+                            plainText += p.textContent;
+                        });
+                        return plainText;
+                    }
+                } else if (activeFilter.type === 'hide') {
+                    // Reconstruct text with hidden character removed
+                    let result = '';
+                    for (let i = 0; i < activeFilter.originalTextSnapshot.length; i++) {
+                        const char = activeFilter.originalTextSnapshot[i];
+                        if (char !== activeFilter.char) {
+                            result += char;
+                        }
+                    }
+                    return result;
+                } else {
+                    // No filter or other filter types
+                    return activeFilter.originalTextSnapshot;
+                }
+            } else if (elementId === 'afterText') {
+                // For after text, reconstruct cleaned text with formatting
+                const allSuspiciousChars = {};
+                for (const category in activeFilter.foundCharacters) {
+                    if (activeFilter.foundCharacters[category]) {
+                        for (const char in activeFilter.foundCharacters[category]) {
+                            allSuspiciousChars[char] = suspiciousCharacters[category][char];
+                        }
+                    }
+                }
+                
+                let result = '';
+                for (let i = 0; i < activeFilter.originalTextSnapshot.length; i++) {
+                    const char = activeFilter.originalTextSnapshot[i];
+                    if (!allSuspiciousChars[char]) {
+                        result += char;
+                    }
+                }
+                return result;
+            }
+
+            // Fallback to element text content
+            const element = document.getElementById(elementId);
+            return element.textContent;
+        }
+
+        function copyText(elementId) {
+            const textToCopy = getFormattedPlainText(elementId);
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showNotification('Text copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Text copied to clipboard!');
+            });
+        }
+
+        function downloadText(elementId, type) {
+            const text = getFormattedPlainText(elementId);
+            const filename = `${type}-text-${new Date().toISOString().slice(0, 10)}.txt`;
+            
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`Downloaded ${filename}`);
+        }
+
+        function showNotification(message) {
+            // Create a simple notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #48bb78;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 2000);
+        }
+
+        // File upload functionality
+        function initFileUpload() {
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const fileList = document.getElementById('fileList');
+
+            // Click to browse
+            fileUploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Drag and drop
+            fileUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.add('dragover');
+            });
+
+            fileUploadArea.addEventListener('dragleave', () => {
+                fileUploadArea.classList.remove('dragover');
+            });
+
+            fileUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+        }
+
+        function handleFiles(files) {
+            const fileList = document.getElementById('fileList');
+            
+            Array.from(files).forEach(file => {
+                if (file.type === 'text/plain' || file.name.endsWith('.docx') || file.name.endsWith('.txt')) {
+                    const fileId = Date.now() + Math.random();
+                    uploadedFiles.push({ id: fileId, file: file, status: 'processing' });
+                    displayFileItem(fileId, file);
+                    processFile(fileId, file);
+                } else {
+                    alert(`Unsupported file type: ${file.name}. Please upload .txt or .docx files only.`);
+                }
+            });
+
+            if (uploadedFiles.length > 0) {
+                fileList.classList.add('show');
+            }
+        }
+
+        function displayFileItem(fileId, file) {
+            const fileList = document.getElementById('fileList');
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.id = `file-${fileId}`;
+
+            const fileIcon = file.name.endsWith('.docx') ? '📄' : '📝';
+            const fileSize = (file.size / 1024).toFixed(1) + ' KB';
+
+            fileItem.innerHTML = `
+                <div class="file-info">
+                    <div class="file-icon">${fileIcon}</div>
+                    <div class="file-details">
+                        <h4>${file.name}</h4>
+                        <p>${fileSize}</p>
+                    </div>
+                </div>
+                <div class="file-status">
+                    <div class="status-indicator processing" id="status-${fileId}"></div>
+                    <span id="status-text-${fileId}">Processing...</span>
+                    <button class="remove-file" onclick="removeFile(${fileId})">×</button>
+                </div>
+            `;
+
+            fileList.appendChild(fileItem);
+        }
+
+        function processFile(fileId, file) {
+            const reader = new FileReader();
+            
+            if (file.name.endsWith('.docx')) {
+                reader.onload = function(e) {
+                    extractTextFromDocx(fileId, e.target.result);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    updateFileStatus(fileId, 'ready', `${text.length} characters`);
+                    updateExtractedText();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function extractTextFromDocx(fileId, arrayBuffer) {
+            JSZip.loadAsync(arrayBuffer)
+                .then(function(zip) {
+                    return zip.file("word/document.xml").async("string");
+                })
+                .then(function(content) {
+                    // Parse XML and extract text with basic formatting
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(content, "text/xml");
+                    
+                    let extractedFormattedText = '';
+                    const paragraphs = xmlDoc.getElementsByTagName("w:p");
+                    
+                    for (let p_idx = 0; p_idx < paragraphs.length; p_idx++) {
+                        const pNode = paragraphs[p_idx];
+                        let currentParagraphText = '';
+                        
+                        // Get all text runs (w:r) within this paragraph
+                        const textRuns = pNode.getElementsByTagName("w:r");
+                        
+                        for (let r_idx = 0; r_idx < textRuns.length; r_idx++) {
+                            const runNode = textRuns[r_idx];
+                            
+                            // Extract text from w:t elements
+                            const textNodes = runNode.getElementsByTagName("w:t");
+                            for (let t_idx = 0; t_idx < textNodes.length; t_idx++) {
+                                currentParagraphText += textNodes[t_idx].textContent;
+                            }
+                            
+                            // Handle line breaks within runs
+                            const brNodes = runNode.getElementsByTagName("w:br");
+                            for (let br_idx = 0; br_idx < brNodes.length; br_idx++) {
+                                currentParagraphText += '\n';
+                            }
+                            
+                            // Handle tabs within runs
+                            const tabNodes = runNode.getElementsByTagName("w:tab");
+                            for (let tab_idx = 0; tab_idx < tabNodes.length; tab_idx++) {
+                                currentParagraphText += '\t';
+                            }
+                        }
+                        
+                        // Add the paragraph text
+                        extractedFormattedText += currentParagraphText;
+                        
+                        // Add paragraph break (newline) except for the last paragraph
+                        if (p_idx < paragraphs.length - 1) {
+                            extractedFormattedText += '\n';
+                        }
+                    }
+                    
+                    const fileIndex = uploadedFiles.findIndex(f => f.id === fileId);
+                    if (fileIndex !== -1) {
+                        uploadedFiles[fileIndex].text = extractedFormattedText;
+                        updateFileStatus(fileId, 'ready', `${extractedFormattedText.length} characters`);
+                        updateExtractedText();
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error processing DOCX file:', error);
+                    updateFileStatus(fileId, 'error', 'Processing failed');
+                });
+        }
+
+        function updateFileStatus(fileId, status, statusText) {
+            const statusIndicator = document.getElementById(`status-${fileId}`);
+            const statusTextElement = document.getElementById(`status-text-${fileId}`);
+            
+            if (statusIndicator && statusTextElement) {
+                statusIndicator.className = `status-indicator ${status}`;
+                statusTextElement.textContent = statusText;
+                
+                const fileIndex = uploadedFiles.findIndex(f => f.id === fileId);
+                if (fileIndex !== -1) {
+                    uploadedFiles[fileIndex].status = status;
+                }
+            }
+        }
+
+        function updateExtractedText() {
+            allExtractedText = uploadedFiles
+                .filter(f => f.status === 'ready' && f.text)
+                .map(f => f.text)
+                .join('\n\n--- FILE SEPARATOR ---\n\n');
+            
+            const textInput = document.getElementById('textInput');
+            if (allExtractedText && !textInput.value.trim()) {
+                textInput.value = allExtractedText;
+            }
+        }
+
+        function removeFile(fileId) {
+            const fileItem = document.getElementById(`file-${fileId}`);
+            if (fileItem) {
+                fileItem.remove();
+            }
+            
+            uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+            
+            if (uploadedFiles.length === 0) {
+                document.getElementById('fileList').classList.remove('show');
+                document.getElementById('textInput').value = '';
+                allExtractedText = '';
+            } else {
+                updateExtractedText();
+            }
+        }
+
+        function analyzeText() {
+            let text = document.getElementById('textInput').value;
+            
+            // Reset filter state at the beginning of each analysis
+            activeFilter = {
+                type: null,
+                char: null,
+                originalTextSnapshot: '',
+                foundCharacters: {}
+            };
+            
+            // If no text in textarea but we have uploaded files, use extracted text
+            if (!text.trim() && allExtractedText) {
+                text = allExtractedText;
+                document.getElementById('textInput').value = text;
+            }
+            
+            const results = document.getElementById('results');
+            
+            if (!text.trim()) {
+                alert('Please enter some text to analyze.');
+                return;
+            }
+
+            try {
+                const foundCharacters = {};
+                let totalSuspicious = 0;
+
+                // Count occurrences of each suspicious character
+                for (let i = 0; i < text.length; i++) {
+                    const char = text[i];
+                    const charCode = char.charCodeAt(0);
+                    
+                    // Check if character is in our suspicious list
+                    for (const category in suspiciousCharacters) {
+                        if (suspiciousCharacters[category] && suspiciousCharacters[category][char]) {
+                            if (!foundCharacters[category]) {
+                                foundCharacters[category] = {};
+                            }
+                            if (!foundCharacters[category][char]) {
+                                foundCharacters[category][char] = 0;
+                            }
+                            foundCharacters[category][char]++;
+                            totalSuspicious++;
+                        }
+                    }
+                }
+
+                // Store original text and found characters for filtering
+                activeFilter.originalTextSnapshot = text;
+                activeFilter.foundCharacters = foundCharacters;
+
+                displayResults(foundCharacters, totalSuspicious, text.length, text);
+                results.classList.add('show');
+                
+                // Initial render of before panel
+                renderBeforePanel(activeFilter.originalTextSnapshot, activeFilter.foundCharacters, activeFilter);
+                updateFilterStatus();
+            } catch (error) {
+                console.error('Error in analyzeText:', error);
+                alert('An error occurred while analyzing the text. Please check the console for details.');
+            }
+        }
+
+        function displayResults(foundCharacters, totalSuspicious, textLength, originalText) {
+            try {
+                const summary = document.getElementById('summary');
+                const categories = document.getElementById('categories');
+
+                // Create summary
+                const suspiciousTypes = Object.keys(foundCharacters || {}).length;
+                const riskLevel = totalSuspicious > 10 ? 'High' : totalSuspicious > 3 ? 'Medium' : totalSuspicious > 0 ? 'Low' : 'None';
+                
+                summary.innerHTML = `
+                    <h3>Analysis Summary</h3>
+                    <p>Found ${totalSuspicious} suspicious character${totalSuspicious !== 1 ? 's' : ''} across ${suspiciousTypes} categor${suspiciousTypes !== 1 ? 'ies' : 'y'}</p>
+                    <div class="summary-stats">
+                        <div class="stat">
+                            <span class="stat-number">${totalSuspicious}</span>
+                            <span>Suspicious Characters</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">${suspiciousTypes}</span>
+                            <span>Categories</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">${riskLevel}</span>
+                            <span>Risk Level</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">${((totalSuspicious / textLength) * 100).toFixed(2)}%</span>
+                            <span>Of Total Text</span>
+                        </div>
+                    </div>
+                `;
+
+                // Handle filter results card for warnings (only when no filter is active)
+                const filterResultsCard = document.getElementById('filterResultsCard');
+                if (!activeFilter.type && totalSuspicious > 5) {
+                    filterResultsCard.innerHTML = `
+                        <div style="color: #c53030;">
+                            ⚠️ High number of suspicious characters detected. This text may be AI-generated or manipulated.
+                        </div>
+                    `;
+                    filterResultsCard.className = 'warning';
+                    filterResultsCard.style.display = 'block';
+                } else if (!activeFilter.type) {
+                    filterResultsCard.style.display = 'none';
+                }
+
+                // Create categories
+                categories.innerHTML = '';
+                
+                if (totalSuspicious === 0) {
+                    categories.innerHTML = '<div class="info">✅ No suspicious characters detected in this text.</div>';
+                } else {
+
+                    let categoryIndex = 0;
+                    for (const [categoryName, characters] of Object.entries(foundCharacters || {})) {
+                        if (!characters) continue;
+                        
+                        const categoryDiv = document.createElement('div');
+                        categoryDiv.className = 'category';
+                        
+                        const characterItems = Object.entries(characters).map(([char, count]) => {
+                            const charName = suspiciousCharacters[categoryName] && suspiciousCharacters[categoryName][char]
+                                ? suspiciousCharacters[categoryName][char]
+                                : 'Unknown Character';
+                            const charCode = 'U+' + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0');
+                            const displayChar = char === '\u200B' ? '⎵' : char === '\u200C' ? '⧸' : char === '\u200D' ? '⧹' :
+                                              char === '\uFEFF' ? '◯' : char.charCodeAt(0) < 32 ? '◦' : char;
+                            // Add data attributes for click handler
+                            return `
+                                <div class="character-item clickable-character"
+                                    data-char="${char}"
+                                    data-category="${categoryName}"
+                                    tabindex="0">
+                                    <div class="char-display">${displayChar}</div>
+                                    <div class="char-info">
+                                        <div class="char-name">${charName}</div>
+                                        <div class="char-code">${charCode}</div>
+                                    </div>
+                                    <div class="char-count">${count}</div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        categoryDiv.innerHTML = `
+                            <h4>
+                                <div class="category-icon">${++categoryIndex}</div>
+                                ${categoryName}
+                            </h4>
+                            <div class="character-list">
+                                ${characterItems}
+                            </div>
+                        `;
+                        
+                        categories.appendChild(categoryDiv);
+                    }
+                }
+
+                // Create text comparison views
+                createTextComparison(originalText, foundCharacters);
+
+                // Add click handlers for character items
+                setTimeout(() => {
+                    document.querySelectorAll('.clickable-character').forEach(el => {
+                        el.addEventListener('click', function(e) {
+                            const char = this.getAttribute('data-char');
+                            const category = this.getAttribute('data-category');
+                            showCharacterPopup(char, category, originalText);
+                        });
+                        el.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                const char = this.getAttribute('data-char');
+                                const category = this.getAttribute('data-category');
+                                showCharacterPopup(char, category, originalText);
+                            }
+                        });
+                    });
+                }, 0);
+            } catch (error) {
+                console.error('Error in displayResults:', error);
+                alert('An error occurred while displaying results. Please check the console for details.');
+            }
+        }
+
+        // Popup/modal for character actions
+        function showCharacterPopup(char, category, originalText) {
+            // Remove existing popup if any
+            let existing = document.getElementById('character-popup-modal');
+            if (existing) existing.remove();
+
+            // Modal container
+            const modal = document.createElement('div');
+            modal.id = 'character-popup-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.25);
+                z-index: 10001;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            // Modal content
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                border-radius: 16px;
+                padding: 32px 24px 24px 24px;
+                min-width: 320px;
+                max-width: 90vw;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+                position: relative;
+            `;
+            const charName = suspiciousCharacters[category] && suspiciousCharacters[category][char] ? suspiciousCharacters[category][char] : 'Unknown Character';
+            const charCode = 'U+' + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0');
+            const displayChar = char === '\u200B' ? '⎵' : char === '\u200C' ? '⧸' : char === '\u200D' ? '⧹' : char === '\uFEFF' ? '◯' : char.charCodeAt(0) < 32 ? '◦' : char;
+            content.innerHTML = `
+                <button id="close-character-popup" style="position:absolute;top:12px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;">&times;</button>
+                <div style="text-align:center;margin-bottom:18px;">
+                    <div style="font-size:2.5rem;">${displayChar}</div>
+                    <div style="font-weight:600;font-size:1.1rem;">${charName}</div>
+                    <div style="color:#718096;font-size:0.95rem;">${charCode} (${category})</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <button class="popup-action-btn" data-action="show-sentences" style="background:#667eea;color:white;padding:10px 0;border:none;border-radius:8px;font-size:1rem;cursor:pointer;">Only show this character</button>
+                    <button class="popup-action-btn" data-action="hide" style="background:#e53e3e;color:white;padding:10px 0;border:none;border-radius:8px;font-size:1rem;cursor:pointer;">Don't show this character</button>
+                    <button class="popup-action-btn" data-action="reset" style="background:#a0aec0;color:white;padding:10px 0;border:none;border-radius:8px;font-size:1rem;cursor:pointer;">Reset View</button>
+                </div>
+            `;
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+
+            // Close handler
+            document.getElementById('close-character-popup').onclick = () => modal.remove();
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+            // Action handlers
+            content.querySelectorAll('.popup-action-btn').forEach(btn => {
+                btn.onclick = function() {
+                    const action = this.getAttribute('data-action');
+                    if (action === 'show-sentences') {
+                        handleShowSentences(char);
+                        modal.remove();
+                    } else if (action === 'hide') {
+                        handleHideCharacter(char);
+                        modal.remove();
+                    } else if (action === 'reset') {
+                        resetFilter();
+                        modal.remove();
+                    }
+                };
+            });
+        }
+
+        function clearAll() {
+            document.getElementById('textInput').value = '';
+            document.getElementById('results').classList.remove('show');
+            
+            // Clear uploaded files
+            uploadedFiles = [];
+            allExtractedText = '';
+            document.getElementById('fileList').innerHTML = '';
+            document.getElementById('fileList').classList.remove('show');
+            document.getElementById('fileInput').value = '';
+            
+            // Reset filter state
+            activeFilter = {
+                type: null,
+                char: null,
+                originalTextSnapshot: '',
+                foundCharacters: {}
+            };
+        }
+
+        // Initialize file upload when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initFileUpload();
+            
+            const textarea = document.getElementById('textInput');
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    analyzeText();
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
